@@ -1,0 +1,24 @@
+library("cepreader")
+library("vegan")
+library("readxl")
+library("readr")
+
+# Reading from Excel files
+sw_xl <- read_excel("data/sw.xlsx")
+
+# Reading CSV or other delimited data with readr
+sw_csv <- read_csv("data/sw.csv")
+
+# better
+sw_csv <- read_csv("data/sw.csv",
+                   col_types = "ddddddd")
+
+# Reading legacy formats
+
+# vegan has read.cep()
+swap138 <- read.cep("data/swap138.cep")
+
+# wider compatibility is via Jari's cepreadr pkg
+# much faster
+swap138 <- readCEP("data/swap138.cep")
+swap_env <- readCEP("data/swap138.log")

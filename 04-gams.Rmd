@@ -1,0 +1,72 @@
+library('readr')
+library("mgcv")
+library("ggplot2")
+library("gratia")
+
+sw_url <- "http://bit.ly/ipasmall"
+braya_url <- "http://bit.ly/ipabraya"
+
+## plot labels
+d15n_label <- expression(delta^{15}*N)
+braya_ylabel <- expression(italic(U)[37]^{italic(k)})
+
+## source Small Water data
+sw <- readRDS(url(sw_url))
+head(sw)
+
+sw_plt <- ggplot(sw, aes(x = Year, y= d15N)) +
+  geom_point() +
+  labs(y = d15n_label, x = "Year CE")
+sw_plt
+
+## Simple, wrong
+sw1 <- gam(d15N ~ s(Year, k = 15), data = sw,
+           method = "REML")
+summary(sw1)
+draw(sw1, residuals = TRUE)
+appraise(sw1, method = "simulate")
+k.check(sw1)
+
+## wrong, because of autocorrelation
+sw2 <- gamm(d15N ~ s(Year, k = 15), data = sw,
+            method = "REML",
+            correlation = corCAR1(form = ~ Year))
+summary(sw2$gam)
+intervals(sw2$lme)
+draw(sw2$gam, residuals = TRUE)
+appraise(sw2$gam, method = "simulate")
+
+## Braya so
+
+# load braya so data set
+braya <- read_table(braya_url, skip = 84, col_names = FALSE)
+names(braya) <- c("Depth", "DepthUpper", "DepthLower", "Year", "YearYoung",
+                  "YearOld", "UK37")
+
+braya_plt <- ggplot(braya, aes(x = Year, y = UK37)) +
+  geom_line(colour = "grey") +
+  geom_point() +
+  labs(y = braya_ylabel, x = "Year CE")
+
+braya_plt
+
+bs1 <- gamm(UK37 ~ s(Year, k = 80), data = braya,
+            correlation = corCAR1(form = ~ Year),
+            method = "REML",
+            control = list(niterEM = 0,
+                           optimMethod = "BFGS",
+                           opt = "optim"))
+summary(bs1$gam)
+intervals(bs1$lme)
+
+draw(bs1$gam)
+
+draw(gam(UK37 ~ s(Year, k = 30), data = braya))
+
+braya <- braya %>% mutate(sampleInterval = YearYoung - YearOld)
+
+bs3 <- gam(UK37 ~ s(Year, k = 40), data = braya,
+           method = "REML",
+           weights = sampleInterval / mean(sampleInterval))
+summary(bs3)
+draw(bs3, residuals = TRUE, n = 200)

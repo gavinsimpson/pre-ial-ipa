@@ -1,0 +1,53 @@
+```{r}
+library("analogue")
+library("dplyr")
+library("ggplot2")
+```
+
+```{r}
+## Load Abernethy Forest data set
+data(abernethy)
+## Remove the Depth and Age variables
+aber_meta <- abernethy %>% as_tibble() %>%
+  select(Age, Depth)
+
+abernethy2 <- abernethy %>%
+  select(-Age, -Depth) %>%
+  chooseTaxa(n.occ = 5, max.abun = 10) %>%
+  bind_cols(aber_meta)
+```
+
+```{r}
+Stratiplot(Age ~ . - Depth,
+           data = abernethy2,
+           type = "poly")
+```
+
+```{r}
+library("tidypaleo")
+```
+
+```{r}
+aber_long <- abernethy %>%
+  select(-Age, -Depth) %>%
+  chooseTaxa(n.occ = 5, max.abun = 10) %>%
+  bind_cols(aber_meta) %>%
+  pivot_longer(cols = !c(Age, Depth), names_to = "taxon",
+               values_to = "rel_abund")
+```
+
+```{r}
+aber_long %>%
+  ggplot(aes(x = rel_abund, y = Age)) +
+    geom_col_segsh() +
+    scale_y_reverse() +
+    facet_abundanceh(vars(taxon))
+```
+
+```{r}
+aber_long %>%
+  ggplot(aes(x = rel_abund, y = Age)) +
+    geom_areah() +
+    scale_y_reverse() +
+    facet_abundanceh(vars(taxon))
+```

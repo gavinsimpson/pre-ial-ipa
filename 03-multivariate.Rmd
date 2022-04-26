@@ -1,0 +1,97 @@
+library("vegan")
+
+# PCA of cnvironmental data
+swap_pc <- rda(swap_env, scale = TRUE)
+swap_pc
+screeplot(swap_pc, bstick = TRUE)
+
+plot(swap_pc, display = c("sites", "species"))
+
+biplot(swap_pc, type = c("t", "p"),
+       col = c("black", "blue"))
+
+swap_ca <- cca(swap138)
+swap_ca
+screeplot(swap_ca, bstick = TRUE)
+
+plot(swap_ca)
+
+summary(eigenvals(swap_ca))[, 1:4]
+
+# transform
+swap138_hel <- decostand(swap138, method = "hellinger")
+
+swap_hel_pc <- rda(swap138_hel)
+
+plot(swap_hel_pc)
+biplot(swap_hel_pc, type = c("t", "p"))
+
+summary(eigenvals(swap_hel_pc))[, 1:4]
+
+## constrained ordination
+swap_rda <- rda(swap138_hel ~ ., data = swap_env)
+
+swap_rda
+
+plot(swap_rda)
+
+# omnibus test
+h <- permute::how(nperm = 199)
+anova(swap_rda, permutations = h)
+
+# test axes
+anova(swap_rda, permutations = h, by = "axis")
+
+# test each term
+anova(swap_rda, permutations = h, by = "margin")
+
+# VIFs
+vif.cca(swap_rda)
+
+## Time tracks
+## load the RLGH and SWAP data sets
+data(rlgh, swapdiat, package = "analogue")
+
+## Fit the timetrack ordination
+mod <- timetrack(swapdiat, rlgh, transform = "hellinger",
+                 method = "rda")
+mod
+
+## Plot the timetrack
+plot(mod, ptype = "b", col = c("forestgreen", "orange"), lwd = 2)
+
+## Other options (reorder the time track)
+ord <- rev(seq_len(nrow(rlgh)))
+plot(mod, choices = 2:3, order = ord, ptype = "b",
+     col = c("forestgreen", "orange"), lwd = 2)
+
+## illustrating use of the formula
+data(swappH)
+mod2 <- timetrack(swapdiat, rlgh,
+                  env = data.frame(pH = swappH),
+                  transform = "hellinger", method = "rda",
+                  formula = ~ pH)
+mod2
+plot(mod2)
+
+## predict locations in timetrack for new observations
+take <- rlgh[1:50, ]
+take <- take[ , colSums(take) > 0]
+mod3 <- predict(mod, newdata = take)
+class(mod3) ## returns a timetrack object
+take <- rlgh[-(1:50), ]
+take <- take[ , colSums(take) > 0]
+mod4 <- predict(mod, newdata = take)
+
+## build a plot up from base parts
+plot(mod, type = "n", ptype = "n")
+points(mod, which = "ordination", col = "grey", pch = 19, cex = 0.7)
+points(mod3, which = "passive", col = "red")
+points(mod4, which = "passive", col = "blue")
+
+## Fit the timetrack ordination - passing scaling args
+mod <- timetrack(swapdiat, rlgh, transform = "hellinger",
+                 method = "rda", scaling = "sites",
+                 correlation = TRUE)
+mod
+plot(mod)
